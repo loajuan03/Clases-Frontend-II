@@ -40,3 +40,14 @@
 .read-the-docs {
   color: #888;
 }
+.app {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 2rem 0;
+}
+
+@media (max-width: 768px) {
+  .app {
+    padding: 1rem 0;
+  }
+}
