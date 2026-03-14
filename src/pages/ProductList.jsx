@@ -207,7 +207,7 @@ function ProductList() {
                 stock={product.stock}
                 image={product.image}
                 description={product.description}
-                onDetails={() => ProductDetailsModal.open(product)}
+                
                 onDelete={() => handleDeleteProduct(product.id)}
                 onEdit={() => handleEditStart(product)}
               />

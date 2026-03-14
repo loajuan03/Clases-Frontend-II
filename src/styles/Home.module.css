@@ -37,12 +37,12 @@
 .categoryTitle {
   font-size: 1.25rem;
   font-weight: 900;
-  color: white;
+  color: rgb(90, 81, 81);
 }
 
 .categoryCount {
   font-weight: 800;
-  color: rgba(255, 255, 255, 0.85);
+  color: rgba(131, 80, 80, 0.85);
 }
 
 .categoryGrid {
