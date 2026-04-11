@@ -1,6 +1,7 @@
 import { useEffect } from 'react';
 
 import styles from '../styles/ProductDetailsModal.module.css';
+import { formatCOP } from '../utils/formatCOP';
 
 function ProductDetailsModal({ isOpen, product, onClose }) {
   useEffect(() => {
@@ -57,13 +58,7 @@ function ProductDetailsModal({ isOpen, product, onClose }) {
             <div className={styles.meta}>
               <div className={styles.metaItem}>
                 <span className={styles.metaLabel}>Precio</span>
-                <span className={styles.metaValue}>{
-                  Number(product.price).toLocaleString('es-CO', {
-                    style: 'currency',
-                    currency: 'COP',
-                    maximumFractionDigits: 0,
-                  })
-                }</span>
+                <span className={styles.metaValue}>{formatCOP(product.price)}</span>
               </div>
 
               <div className={styles.metaItem}>

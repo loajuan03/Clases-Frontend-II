@@ -39,27 +39,22 @@
 }
 
 .productName {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #1f2937;
   margin: 0;
 }
 
 .productDescription {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   color: #6b7280;
-  line-height: 1.5;
+  line-height: 1.4;
   flex: 1;
 }
 
-.productRating {
-  font-size: 0.875rem;
-  font-weight: 800;
-  color: #374151;
-}
-
+.productRating,
 .productStock {
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   font-weight: 700;
   color: #374151;
 }
@@ -68,26 +63,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1rem;
-  padding-top: 1rem;
+  margin-top: 0.8rem;
+  padding-top: 0.8rem;
   border-top: 1px solid #e5e7eb;
 }
 
 .productPrice {
-  font-size: 1.5rem;
+  font-size: 1.3rem;
   font-weight: 800;
   color: #059669;
 }
 
+/* ❤️ LIKE */
 .btnLike {
   background: #f3f4f6;
   border: none;
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.75rem;
   font-weight: 600;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: all 0.2s ease;
 }
 
 .btnLike:hover {
@@ -103,36 +99,49 @@
   color: #dc2626;
 }
 
-.btnLike.liked:hover {
-  background: #fecaca;
-}
-
+/* 🔥 CONTENEDOR BOTONES */
 .cardActions {
   display: flex;
-  gap: 0.5rem;
-  margin-top: 0.75rem;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-top: 8px;
 }
 
+/* 🔘 BOTONES GENERALES (compactos) */
+.btnAddToCart,
 .btnEdit,
 .btnDetails,
 .btnDelete {
   border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 8px;
-  font-size: 0.875rem;
-  font-weight: 800;
+  padding: 0.35rem 0.6rem;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 700;
   cursor: pointer;
+  transition: all 0.2s ease;
 }
 
-.btnDetails {
-  background: var(--gray-100);
-  color: var(--gray-900);
+/* 🛒 Agregar */
+.btnAddToCart {
+  background: var(--primary);
+  color: white;
 }
 
-.btnDetails:hover {
-  background: var(--gray-200);
+.btnAddToCart:hover {
+  background: var(--primary-dark);
 }
 
+.btnAddToCart:active {
+  transform: scale(0.96);
+}
+
+.btnAddToCart:disabled {
+  background: #d1d5db;
+  color: #6b7280;
+  cursor: not-allowed;
+}
+
+/* ✏️ Editar */
 .btnEdit {
   background: var(--primary);
   color: white;
@@ -142,6 +151,17 @@
   background: var(--primary-dark);
 }
 
+/* ℹ️ Detalles */
+.btnDetails {
+  background: var(--gray-100);
+  color: var(--gray-900);
+}
+
+.btnDetails:hover {
+  background: var(--gray-200);
+}
+
+/* ❌ Eliminar */
 .btnDelete {
   background: var(--danger);
   color: white;

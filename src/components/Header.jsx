@@ -1,17 +1,11 @@
-import styles from "../styles/Header.module.css";
+import styles from '../styles/Header.module.css';
 
-import Navbar from "./Navbar";
+import Navbar from './Navbar';
 
-function Header({ activePage, onNavigate, user, onSignIn, onSignOut }) {
+function Header({ user, onSignOut, cartItemCount }) {
   return (
     <header className={styles.header}>
-      <Navbar
-        activePage={activePage}
-        onNavigate={onNavigate}
-        user={user}
-        onSignIn={onSignIn}
-        onSignOut={onSignOut}
-      />
+      <Navbar user={user} onSignOut={onSignOut} cartItemCount={cartItemCount} />
     </header>
   );
 }

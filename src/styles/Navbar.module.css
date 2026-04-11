@@ -32,7 +32,10 @@
   flex-wrap: wrap;
 }
 
+/* 🔥 LINKS CORREGIDOS */
 .link {
+  position: relative;
+  text-decoration: none; /* ❌ elimina línea fea */
   border: none;
   background: transparent;
   cursor: pointer;
@@ -40,15 +43,56 @@
   border-radius: 8px;
   font-weight: 700;
   color: var(--gray-900);
+  transition: all 0.2s ease;
+  font-family: inherit;
 }
 
 .link:hover {
   background: var(--gray-100);
 }
 
+/* 🔥 línea animada */
+.link::after {
+  content: "";
+  position: absolute;
+  left: 0;
+  bottom: -3px;
+  width: 0%;
+  height: 2px;
+  background: var(--primary);
+  transition: width 0.3s ease;
+}
+
+.link:hover::after {
+  width: 100%;
+}
+
 .active {
   background: var(--gray-100);
   color: var(--primary-dark);
+}
+
+/* 🔴 Badge carrito */
+.cartBadge {
+  position: absolute;
+  top: -5px;
+  right: -8px;
+
+  background-color: red;
+  color: white;
+
+  font-size: 11px;
+  font-weight: bold;
+
+  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  box-shadow: 0 0 0 2px white;
 }
 
 .auth {
@@ -62,6 +106,7 @@
   color: var(--gray-900);
 }
 
+/* 🔵 Botón principal */
 .authBtn {
   border: none;
   background: var(--primary);
@@ -70,12 +115,38 @@
   padding: 0.5rem 0.75rem;
   border-radius: 8px;
   font-weight: 800;
+  transition: all 0.2s ease;
 }
 
 .authBtn:hover {
   background: var(--primary-dark);
 }
 
+/* ⚪ Botón secundario */
+.secondaryAuthBtn {
+  border: 2px solid var(--primary);
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  font-weight: 800;
+  transition: all 0.2s ease;
+}
+
+.secondaryAuthBtn:hover {
+  background: var(--primary);
+  color: white;
+}
+
+/* 🔧 contenedor botones */
+.guestActions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* 📱 Responsive */
 @media (max-width: 768px) {
   .navbar {
     align-items: flex-start;

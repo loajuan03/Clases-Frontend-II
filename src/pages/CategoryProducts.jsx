@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import {useNavigate, useParams} from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import ProductCard from '../components/ProductCard';
 import ProductDetailsModal from '../components/ProductDetailsModal';
@@ -7,21 +7,21 @@ import styles from '../styles/CategoryProducts.module.css';
 import productListStyles from '../styles/ProductList.module.css';
 import { loadProducts } from '../utils/productsStorage';
 
-function CategoryProducts({ cartItems, onAddtoCart }) {
+function CategoryProducts({ cartItems, onAddToCart }) {
   const [query, setQuery] = useState('');
   const [selectedProduct, setSelectedProduct] = useState(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [productsState] = useState(loadProducts);
-  const { categoryName } = useParams();
   const navigate = useNavigate();
+  const { categoryName } = useParams();
 
   const category = useMemo(
-    () => (categoryName ? decodeURIComponent(categoryName) : null), 
+    () => (categoryName ? decodeURIComponent(categoryName) : null),
     [categoryName]
   );
 
   const cartQuantityByProductId = useMemo(
-    () => new Map(cartItems.map((item) => [item.productId, item.quantity])),
+    () => new Map(cartItems.map((item) => [item.id, item.quantity])),
     [cartItems]
   );
 
@@ -81,6 +81,7 @@ function CategoryProducts({ cartItems, onAddtoCart }) {
           {filteredProducts.map((product) => (
             <ProductCard
               key={product.id}
+              id={product.id}
               name={product.name}
               category={product.category}
               rating={product.rating}
@@ -88,6 +89,8 @@ function CategoryProducts({ cartItems, onAddtoCart }) {
               stock={product.stock}
               image={product.image}
               description={product.description}
+              onAddToCart={onAddToCart}
+              disableAddToCart={(cartQuantityByProductId.get(product.id) ?? 0) >= product.stock}
               onDetails={() => handleOpenDetails(product)}
             />
           ))}

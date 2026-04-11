@@ -1,12 +1,13 @@
 import { useMemo, useState } from 'react';
-import {useNavigate} from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 
 import homeStyles from '../styles/Home.module.css';
 import { loadProducts } from '../utils/productsStorage';
 
-function Home({ onOpenCategory }) {
+function Home() {
   const [productsState] = useState(loadProducts);
- const navigate = useNavigate();
+  const navigate = useNavigate();
+
   const categoryTiles = useMemo(() => {
     const bestByCategory = new Map();
 
@@ -52,7 +53,7 @@ function Home({ onOpenCategory }) {
             aria-label={`Ver productos de ${category}`}
           >
             <img className={homeStyles.categoryImage} src={product.image} alt={product.name} />
-            <span className={homeStyles.categoryLabel}aria-hidden="true">
+            <span className={homeStyles.categoryLabel} aria-hidden="true">
               <span className={homeStyles.categoryLabelText}>{category}</span>
             </span>
           </button>
