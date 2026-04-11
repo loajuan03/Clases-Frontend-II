@@ -1,0 +1,159 @@
+import { useMemo } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
+
+import useAuth from '../hooks/useAuth';
+import styles from '../styles/OrderDetail.module.css';
+import { formatCOP } from '../utils/formatCOP';
+import { loadOrdersByUserId } from '../utils/ordersStorage';
+
+function OrderDetail() {
+  const navigate = useNavigate();
+  const { orderId } = useParams();
+  const { currentUser } = useAuth();
+
+  const order = useMemo(
+    () =>
+      loadOrdersByUserId(currentUser?.id).find((savedOrder) => savedOrder.id === orderId) ?? null,
+    [currentUser?.id, orderId]
+  );
+
+  if (!order) {
+    return (
+      <section className={styles.container}>
+        <div className={styles.emptyState}>
+          <p className={styles.eyebrow}>Semana 11</p>
+          <h1 className={styles.title}>Orden no encontrada</h1>
+          <p className={styles.subtitle}>
+            El identificador solicitado no pertenece al usuario autenticado o ya no está disponible
+            en este navegador.
+          </p>
+          <div className={styles.actions}>
+            <button
+              type="button"
+              className={styles.secondaryButton}
+              onClick={() => navigate('/user/orders')}
+            >
+              Volver al historial
+            </button>
+            <button type="button" className={styles.primaryButton} onClick={() => navigate('/')}>
+              Ir al inicio
+            </button>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  const formattedDate = new Date(order.createdAt).toLocaleString('es-CO', {
+    dateStyle: 'medium',
+    timeStyle: 'short',
+  });
+
+  return (
+    <section className={styles.container}>
+      <header className={styles.header}>
+        <div>
+          <p className={styles.eyebrow}>Semana 11</p>
+          <h1 className={styles.title}>Detalle de orden</h1>
+          <p className={styles.subtitle}>
+            Consulta el pedido completo, con los datos del cliente, envio, pago y totales.
+          </p>
+        </div>
+
+        <div className={styles.actions}>
+          <button
+            type="button"
+            className={styles.secondaryButton}
+            onClick={() => navigate('/user/orders')}
+          >
+            Volver al historial
+          </button>
+          <button
+            type="button"
+            className={styles.primaryButton}
+            onClick={() => navigate('/user/profile')}
+          >
+            Mi perfil
+          </button>
+        </div>
+      </header>
+
+      <div className={styles.summaryGrid}>
+        <div className={styles.summaryCard}>
+          <span className={styles.label}>Orden</span>
+          <strong>{order.id}</strong>
+        </div>
+        <div className={styles.summaryCard}>
+          <span className={styles.label}>Fecha</span>
+          <strong>{formattedDate}</strong>
+        </div>
+        <div className={styles.summaryCard}>
+          <span className={styles.label}>Envio</span>
+          <strong>{order.shippingMethod.label}</strong>
+        </div>
+        <div className={styles.summaryCard}>
+          <span className={styles.label}>Pago</span>
+          <strong>{order.paymentMethod.label}</strong>
+        </div>
+      </div>
+
+      <div className={styles.layout}>
+        <section className={styles.card}>
+          <h2 className={styles.sectionTitle}>Cliente</h2>
+          <div className={styles.infoList}>
+            <p>
+              <strong>{order.customer.fullName}</strong>
+            </p>
+            <p>{order.customer.email}</p>
+            <p>{order.customer.phone}</p>
+            <p>{order.customer.address}</p>
+            <p>
+              {order.customer.city} - {order.customer.postalCode}
+            </p>
+          </div>
+        </section>
+
+        <section className={styles.card}>
+          <h2 className={styles.sectionTitle}>Totales</h2>
+          <div className={styles.totalRows}>
+            <div className={styles.totalRow}>
+              <span>Subtotal</span>
+              <strong>{formatCOP(order.totals.subtotal)}</strong>
+            </div>
+            <div className={styles.totalRow}>
+              <span>IVA</span>
+              <strong>{formatCOP(order.totals.tax)}</strong>
+            </div>
+            <div className={styles.totalRow}>
+              <span>Envio</span>
+              <strong>{formatCOP(order.totals.shipping)}</strong>
+            </div>
+            <div className={`${styles.totalRow} ${styles.totalRowStrong}`}>
+              <span>Total</span>
+              <strong>{formatCOP(order.totals.total)}</strong>
+            </div>
+          </div>
+        </section>
+      </div>
+
+      <section className={styles.card}>
+        <h2 className={styles.sectionTitle}>Productos</h2>
+        <div className={styles.itemList}>
+          {order.items.map((item) => (
+            <article key={`${order.id}-${item.id}`} className={styles.item}>
+              <img className={styles.itemImage} src={item.image} alt={item.name} />
+              <div className={styles.itemContent}>
+                <h3 className={styles.itemName}>{item.name}</h3>
+                <p className={styles.itemMeta}>Categoria: {item.category}</p>
+                <p className={styles.itemMeta}>Cantidad: {item.quantity}</p>
+              </div>
+              <strong className={styles.itemPrice}>{formatCOP(item.price * item.quantity)}</strong>
+            </article>
+          ))}
+        </div>
+      </section>
+    </section>
+  );
+}
+
+export default OrderDetail;
