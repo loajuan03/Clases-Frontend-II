@@ -1,6 +1,7 @@
 import { createContext, useEffect, useState } from 'react';
 
 import authService from '../services/authService';
+import { AUTH_SESSION_CLEARED_EVENT, SESSION_STORAGE_KEY } from '../utils/authStorage';
 
 const AuthContext = createContext(null);
 
@@ -35,6 +36,27 @@ function AuthProvider({ children }) {
 
     return () => {
       isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    const clearExpiredSession = () => {
+      setCurrentUser(null);
+      setAuthError('Tu sesión expiró. Inicia sesión nuevamente.');
+    };
+
+    const handleStorage = (event) => {
+      if (event.key === SESSION_STORAGE_KEY && !event.newValue) {
+        clearExpiredSession();
+      }
+    };
+
+    window.addEventListener(AUTH_SESSION_CLEARED_EVENT, clearExpiredSession);
+    window.addEventListener('storage', handleStorage);
+
+    return () => {
+      window.removeEventListener(AUTH_SESSION_CLEARED_EVENT, clearExpiredSession);
+      window.removeEventListener('storage', handleStorage);
     };
   }, []);
 

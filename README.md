@@ -152,7 +152,7 @@ Variables soportadas:
 Por defecto:
 
 - la app usa fallback local
-- la base de API es `/api`
+- la base de API es `/api/v1`
 - el timeout base es `10000ms`
 
 Para el contrato mínimo de integración, revisar `CONTRATO_API_MINIMO.md`.

@@ -224,7 +224,7 @@ async function updateCartItemQuantityAsync(productId, nextQuantity, currentItems
 
   const token = await ensureRemoteCartSession();
   const response = await requestJson(`/cart/items/${productId}`, {
-    method: 'PATCH',
+    method: 'PUT',
     token,
     body: {
       quantity: Math.max(1, Math.floor(Number(nextQuantity) || 1)),

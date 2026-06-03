@@ -46,6 +46,10 @@ const normalizeOrder = (order) => {
     userFullName: String(order?.userFullName ?? order?.customer?.fullName ?? ''),
     status: String(order?.status ?? 'PENDING'),
     createdAt: String(order?.createdAt ?? new Date().toISOString()),
+    shippingMethodId: String(order?.shippingMethodId ?? order?.shippingMethod?.id ?? ''),
+    paymentMethodId: String(order?.paymentMethodId ?? order?.paymentMethod?.id ?? ''),
+    shippingMethod: order?.shippingMethod ?? null,
+    paymentMethod: order?.paymentMethod ?? null,
     items: normalizedItems,
     customer: {
       fullName: String(

@@ -104,7 +104,7 @@ function setUserDefaultAddressAsync(userId, addressId) {
   }
 
   return requestJson(`/users/me/addresses/${addressId}/default`, {
-    method: 'PATCH',
+    method: 'PUT',
     token: loadSessionToken(),
   }).then((response) => normalizeAddressResponse(userId, response));
 }

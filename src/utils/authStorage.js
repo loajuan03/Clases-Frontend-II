@@ -1,6 +1,7 @@
 const USERS_STORAGE_KEY = 'authUsers';
 const SESSION_STORAGE_KEY = 'authSession';
 const TOKEN_STORAGE_KEY = 'authToken';
+const AUTH_SESSION_CLEARED_EVENT = 'auth-session-cleared';
 const DEFAULT_ROLE = 'CUSTOMER';
 const ADMIN_ROLE = 'ADMIN';
 const DEFAULT_ADMIN_USER = {
@@ -251,16 +252,21 @@ export function clearSessionToken() {
   window.localStorage.removeItem(TOKEN_STORAGE_KEY);
 }
 
-export function clearSessionUser() {
+export function clearSessionUser({ notify = false } = {}) {
   if (typeof window === 'undefined') {
     return;
   }
 
   window.localStorage.removeItem(SESSION_STORAGE_KEY);
+
+  if (notify) {
+    window.dispatchEvent(new CustomEvent(AUTH_SESSION_CLEARED_EVENT));
+  }
 }
 
 export {
   ADMIN_ROLE,
+  AUTH_SESSION_CLEARED_EVENT,
   DEFAULT_ADMIN_USER,
   DEFAULT_ROLE,
   SESSION_STORAGE_KEY,

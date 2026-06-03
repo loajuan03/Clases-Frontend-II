@@ -46,7 +46,7 @@ export async function requestJson(path, options = {}) {
     }
 
     if (response.status === 401) {
-      clearSessionUser();
+      clearSessionUser({ notify: true });
       clearSessionToken();
     }
 

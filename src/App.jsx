@@ -23,7 +23,11 @@ import Unauthorized from './pages/Unauthorized';
 import UserOrders from './pages/UserOrders';
 import UserProfile from './pages/UserProfile';
 import orderService from './services/orderService';
-import { calculateOrderTotals } from './utils/calculateOrderTotals';
+import {
+  calculateOrderTotals,
+  getPaymentMethodById,
+  getShippingOptionById,
+} from './utils/calculateOrderTotals';
 
 import './App.css';
 
@@ -35,15 +39,17 @@ function App() {
   const handleCompleteCheckout = async ({
     billingAddress,
     customer,
+    paymentMethodId,
     shippingAddress,
     billingAddressId,
+    shippingMethodId,
     shippingAddressId,
   }) => {
     if (cartItems.length === 0) {
       return null;
     }
 
-    const totals = calculateOrderTotals(cartItems);
+    const totals = calculateOrderTotals(cartItems, shippingMethodId);
     const order = await orderService.createOrderAsync({
       cartId: cart.id,
       userId: currentUser?.id ?? '',
@@ -55,7 +61,11 @@ function App() {
       shippingAddressId,
       billingAddress,
       billingAddressId,
+      paymentMethodId,
+      paymentMethod: getPaymentMethodById(paymentMethodId),
       totals,
+      shippingMethodId,
+      shippingMethod: getShippingOptionById(shippingMethodId),
     });
 
     setLatestOrder(order);

@@ -6,7 +6,11 @@ import useAuth from '../hooks/useAuth';
 import useCart from '../hooks/useCart';
 import addressService from '../services/addressService';
 import styles from '../styles/Checkout.module.css';
-import { calculateOrderTotals } from '../utils/calculateOrderTotals';
+import {
+  calculateOrderTotals,
+  PAYMENT_METHODS,
+  SHIPPING_OPTIONS,
+} from '../utils/calculateOrderTotals';
 import { formatCOP } from '../utils/formatCOP';
 
 const EMAIL_REGEX = /^[^@]+@[^@]+\.[^@]+$/;
@@ -23,6 +27,8 @@ function Checkout({ onCompleteCheckout }) {
     phone: user?.phone ?? '',
     shippingAddressId: '',
     billingAddressId: '',
+    shippingMethodId: SHIPPING_OPTIONS[0].id,
+    paymentMethodId: PAYMENT_METHODS[0].id,
   });
   const [errors, setErrors] = useState({});
   const [submitError, setSubmitError] = useState('');
@@ -86,7 +92,10 @@ function Checkout({ onCompleteCheckout }) {
     [addresses, values.billingAddressId]
   );
 
-  const totals = useMemo(() => calculateOrderTotals(cartItems), [cartItems]);
+  const totals = useMemo(
+    () => calculateOrderTotals(cartItems, values.shippingMethodId),
+    [cartItems, values.shippingMethodId]
+  );
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -145,6 +154,8 @@ function Checkout({ onCompleteCheckout }) {
         },
         billingAddress,
         billingAddressId: values.billingAddressId,
+        paymentMethodId: values.paymentMethodId,
+        shippingMethodId: values.shippingMethodId,
         shippingAddress,
         shippingAddressId: values.shippingAddressId,
       });
@@ -359,6 +370,51 @@ function Checkout({ onCompleteCheckout }) {
                   <p>Selecciona una dirección.</p>
                 )}
               </article>
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Método de envío</h2>
+            <div className={styles.optionList}>
+              {SHIPPING_OPTIONS.map((option) => (
+                <label className={styles.optionCard} key={option.id}>
+                  <input
+                    checked={values.shippingMethodId === option.id}
+                    disabled={isSubmitting}
+                    name="shippingMethodId"
+                    onChange={handleChange}
+                    type="radio"
+                    value={option.id}
+                  />
+                  <span>
+                    <span className={styles.optionTitle}>{option.label}</span>
+                    <span className={styles.optionDescription}>{option.description}</span>
+                  </span>
+                  <strong className={styles.optionPrice}>{formatCOP(option.price)}</strong>
+                </label>
+              ))}
+            </div>
+          </section>
+
+          <section className={styles.section}>
+            <h2 className={styles.sectionTitle}>Medio de pago</h2>
+            <div className={styles.optionList}>
+              {PAYMENT_METHODS.map((option) => (
+                <label className={styles.optionCard} key={option.id}>
+                  <input
+                    checked={values.paymentMethodId === option.id}
+                    disabled={isSubmitting}
+                    name="paymentMethodId"
+                    onChange={handleChange}
+                    type="radio"
+                    value={option.id}
+                  />
+                  <span>
+                    <span className={styles.optionTitle}>{option.label}</span>
+                    <span className={styles.optionDescription}>{option.description}</span>
+                  </span>
+                </label>
+              ))}
             </div>
           </section>
           {submitError ? <p className={styles.error}>{submitError}</p> : null}

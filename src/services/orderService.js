@@ -40,10 +40,14 @@ function createOrder(order) {
 
 function getOrdersAsync() {
   if (appConfig.useRemoteApi) {
-    return requestJson('/orders/me', {
-      method: 'GET',
-      token: loadSessionToken(),
-    }).then((response) => saveOrders(Array.isArray(response) ? response : []));
+   return requestJson('/orders/me', {
+  method: 'GET',
+  token: loadSessionToken(),
+}).then((response) =>
+  saveOrders(
+    (Array.isArray(response) ? response : []).map(normalizeRemoteOrder)
+  )
+);
   }
 
   return toAsyncResult(() => getOrders());
@@ -62,7 +66,13 @@ function getOrderByIdForUserAsync(userId, orderId) {
     return requestJson(`/orders/${orderId}`, {
       method: 'GET',
       token: loadSessionToken(),
-    }).then((response) => saveOrder(normalizeOrderPayload(response)));
+    }).then((response) =>
+  saveOrder(
+    normalizeOrderPayload(
+      normalizeRemoteOrder(response)
+    )
+  )
+);
   }
 
   return toAsyncResult(() => getOrderByIdForUser(userId, orderId));
@@ -78,13 +88,27 @@ function createOrderAsync(order) {
   return requestJson('/orders/checkout', {
     method: 'POST',
     token: loadSessionToken(),
-    body: {
-      cartId: cart.id,
-      shippingAddressId: order?.shippingAddress?.id ?? order?.shippingAddressId,
-      billingAddressId: order?.billingAddress?.id ?? order?.billingAddressId,
-    },
+   body: {
+  shippingAddressId: order?.shippingAddress?.id ?? order?.shippingAddressId,
+  billingAddressId: order?.billingAddress?.id ?? order?.billingAddressId,
+},,
   }).then((response) => saveOrder(normalizeOrderPayload(response)));
 }
+const normalizeRemoteOrder = (order) => ({
+  ...order,
+
+  totals: order.totals ?? {
+    subtotal: Number(order.subtotal ?? 0),
+    tax: Number(order.tax ?? 0),
+    shipping: Number(order.shippingCost ?? 0),
+    total: Number(order.total ?? 0),
+  },
+
+  items: (order.items ?? []).map((item) => ({
+    ...item,
+    name: item.name ?? item.productName,
+  })),
+});
 
 const orderService = {
   createOrder,

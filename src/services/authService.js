@@ -61,7 +61,7 @@ const toSessionUser = (user) => {
     fullName,
     name: fullName,
     email: user.email,
-    role: normalizeRole(user.role),
+    role: normalizeRole(user.role ?? user.roleName),
     phone: String(user.phone ?? '').trim(),
     status: String(user.status ?? 'ACTIVE').trim() || 'ACTIVE',
     createdAt: String(user.createdAt ?? ''),
