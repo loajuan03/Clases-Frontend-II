@@ -5,8 +5,6 @@ import { PRODUCTS_DEFAULT_RATING, loadProducts, saveProducts } from '../utils/pr
 import categoryService from './categoryService';
 import { requestJson } from './http';
 
-const REMOTE_STORAGE_OPTIONS = Object.freeze({ seedFallback: false });
-
 const normalizeId = (value) => {
   const parsed = Number(value);
   return Number.isFinite(parsed) ? parsed : 0;
@@ -33,10 +31,6 @@ const extractCollection = (payload) => {
 
   return [];
 };
-
-const loadRemoteProducts = () => loadProducts(REMOTE_STORAGE_OPTIONS);
-
-const persistRemoteProductsCache = (products) => saveProducts(products, REMOTE_STORAGE_OPTIONS);
 
 const normalizeProductInput = (product, currentProducts = []) => {
   const normalizedId = normalizeId(product?.id);
@@ -143,11 +137,8 @@ const applyFilters = (products, filters = {}) => {
 
 const persistProducts = (products) => saveProducts(products);
 
-const persistRemoteProducts = (products) => {
-  return persistRemoteProductsCache(
-    products.map((product) => normalizeRemoteProductInput(product))
-  );
-};
+const normalizeRemoteProducts = (products) =>
+  products.map((product) => normalizeRemoteProductInput(product));
 
 const buildQueryString = (filters = {}) => {
   const searchParams = new URLSearchParams();
@@ -258,7 +249,9 @@ function getProductsAsync(filters = {}) {
 
   return requestJson(`/products${buildQueryString(filters)}`, {
     method: 'GET',
-  }).then((response) => applyFilters(persistRemoteProducts(extractCollection(response)), filters));
+  }).then((response) =>
+    applyFilters(normalizeRemoteProducts(extractCollection(response)), filters)
+  );
 }
 
 function getProductByIdAsync(productId) {
@@ -270,23 +263,12 @@ function getProductByIdAsync(productId) {
 
   return requestJson(`/products/${normalizedId}`, {
     method: 'GET',
-  }).then((response) => {
-    const normalizedProduct = normalizeRemoteProductInput(response);
-    const currentProducts = loadRemoteProducts();
-    const nextProducts = currentProducts.some((product) => product.id === normalizedProduct.id)
-      ? currentProducts.map((product) =>
-          product.id === normalizedProduct.id ? normalizedProduct : product
-        )
-      : [...currentProducts, normalizedProduct];
-
-    persistRemoteProductsCache(nextProducts);
-    return normalizedProduct;
-  });
+  }).then((response) => normalizeRemoteProductInput(response));
 }
 
-function createProductAsync(product, currentProducts = loadProducts()) {
+function createProductAsync(product, currentProducts) {
   if (!appConfig.useRemoteApi) {
-    return toAsyncResult(() => createProduct(product, currentProducts));
+    return toAsyncResult(() => createProduct(product, currentProducts ?? loadProducts()));
   }
 
   return buildRemoteAdminPayload(product).then((body) =>
@@ -298,9 +280,9 @@ function createProductAsync(product, currentProducts = loadProducts()) {
   );
 }
 
-function updateProductAsync(updatedProduct, currentProducts = loadProducts()) {
+function updateProductAsync(updatedProduct, currentProducts) {
   if (!appConfig.useRemoteApi) {
-    return toAsyncResult(() => updateProduct(updatedProduct, currentProducts));
+    return toAsyncResult(() => updateProduct(updatedProduct, currentProducts ?? loadProducts()));
   }
 
   return buildRemoteAdminPayload(updatedProduct).then((body) =>
@@ -312,11 +294,11 @@ function updateProductAsync(updatedProduct, currentProducts = loadProducts()) {
   );
 }
 
-function deleteProductAsync(productId, currentProducts = loadProducts()) {
+function deleteProductAsync(productId, currentProducts) {
   const normalizedId = normalizeId(productId);
 
   if (!appConfig.useRemoteApi) {
-    return toAsyncResult(() => deleteProduct(normalizedId, currentProducts));
+    return toAsyncResult(() => deleteProduct(normalizedId, currentProducts ?? loadProducts()));
   }
 
   return requestJson(`/admin/products/${normalizedId}`, {

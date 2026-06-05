@@ -8,6 +8,8 @@ import cartService from '../services/cartService';
 import styles from '../styles/AuthPage.module.css';
 import { DEFAULT_ADMIN_USER } from '../utils/authStorage';
 
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
 const fillDemoCredentials = (setValues, credentials) => {
   setValues({
     email: credentials.email,
@@ -39,25 +41,35 @@ function Login() {
     clearAuthError();
   };
 
+  const validateForm = () => {
+    const normalizedEmail = values.email.trim();
+
+    if (!normalizedEmail) {
+      return 'Ingresa tu correo electrónico.';
+    }
+
+    if (!EMAIL_REGEX.test(normalizedEmail)) {
+      return 'Ingresa un correo electrónico válido.';
+    }
+
+    if (!values.password) {
+      return 'Ingresa tu contraseña.';
+    }
+
+    return '';
+  };
+
   const handleSubmit = async (event) => {
     event.preventDefault();
 
-    if (isRemoteMode && !isCartReady) {
-      setFormError(
-        cartHydrationStatus === 'error'
-          ? cartError || 'No fue posible preparar el carrito para iniciar sesión.'
-          : 'Preparando el carrito antes de iniciar sesión.'
-      );
+    const validationError = validateForm();
+
+    if (validationError) {
+      setFormError(validationError);
       return;
     }
 
-    const guestCartId = cartService.getGuestCartIdForAuth(cart);
-
-    if (isRemoteMode && !guestCartId) {
-      setFormError('No fue posible preparar un carrito invitado válido para iniciar sesión.');
-      return;
-    }
-
+    const guestCartId = isRemoteMode && isCartReady ? cartService.getGuestCartIdForAuth(cart) : '';
     const result = await login({
       email: values.email.trim(),
       guestCartId,
@@ -73,18 +85,14 @@ function Login() {
     navigate(nextPath, { replace: true });
   };
 
-  const submitDisabled = isSubmittingAuth || (isRemoteMode && !isCartReady);
-  const blockedMessage =
-    isRemoteMode && !isCartReady
-      ? cartHydrationStatus === 'error'
-        ? cartError || 'No fue posible preparar el carrito para iniciar sesión.'
-        : 'Preparando carrito para conservar tus productos antes de autenticarte...'
+  const cartWarning =
+    isRemoteMode && cartHydrationStatus === 'error'
+      ? cartError || 'El ingreso continuará sin asociar un carrito invitado.'
       : '';
 
   return (
     <section className={styles.container}>
       <div className={styles.card}>
-        <p className={styles.eyebrow}>Semana 12</p>
         <h1 className={styles.title}>Iniciar sesión</h1>
         <p className={styles.subtitle}>
           Accede a tu cuenta para proteger el checkout, diferenciar permisos y abrir el panel
@@ -117,7 +125,7 @@ function Login() {
                   <button
                     type="button"
                     className={styles.demoActionButton}
-                    disabled={submitDisabled}
+                    disabled={isSubmittingAuth}
                     onClick={() => fillDemoCredentials(setValues, remoteDemoCredentials.customer)}
                   >
                     Usar customer demo
@@ -125,7 +133,7 @@ function Login() {
                   <button
                     type="button"
                     className={styles.demoActionButton}
-                    disabled={submitDisabled}
+                    disabled={isSubmittingAuth}
                     onClick={() => fillDemoCredentials(setValues, remoteDemoCredentials.admin)}
                   >
                     Usar admin demo
@@ -143,17 +151,17 @@ function Login() {
           </div>
         </div>
 
-        <form className={styles.form} onSubmit={handleSubmit}>
+        <form className={styles.form} onSubmit={handleSubmit} noValidate>
           <label className={styles.field}>
             <span className={styles.label}>Correo electrónico</span>
             <input
               className={styles.input}
-              disabled={submitDisabled}
+              disabled={isSubmittingAuth}
               name="email"
               value={values.email}
               onChange={handleChange}
               placeholder="correo@dominio.com"
-              type="email"
+              type="text"
             />
           </label>
 
@@ -161,20 +169,21 @@ function Login() {
             <span className={styles.label}>Contraseña</span>
             <input
               className={styles.input}
-              disabled={submitDisabled}
+              disabled={isSubmittingAuth}
               name="password"
               value={values.password}
               onChange={handleChange}
-              placeholder="Mínimo 6 caracteres"
+              placeholder="Mínimo 8 caracteres"
               type="password"
             />
           </label>
 
-          {formError || authError || blockedMessage ? (
-            <p className={styles.error}>{formError || authError || blockedMessage}</p>
+          {formError || authError ? <p className={styles.error}>{formError || authError}</p> : null}
+          {cartWarning && !formError && !authError ? (
+            <p className={styles.error}>{cartWarning}</p>
           ) : null}
 
-          <button type="submit" className={styles.primaryButton} disabled={submitDisabled}>
+          <button type="submit" className={styles.primaryButton} disabled={isSubmittingAuth}>
             {isSubmittingAuth ? 'Ingresando...' : 'Ingresar'}
           </button>
         </form>

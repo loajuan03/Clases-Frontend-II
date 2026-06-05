@@ -12,11 +12,12 @@ import {
   updateUser,
 } from '../utils/authStorage';
 import { saveCart } from '../utils/cartStorage';
+import { translateErrorMessage } from '../utils/errorMessages';
 
 import cartService from './cartService';
 import { requestJson } from './http';
 
-const MIN_REGISTER_PASSWORD_LENGTH = 6;
+const MIN_REGISTER_PASSWORD_LENGTH = 8;
 const MIN_CHANGE_PASSWORD_LENGTH = 8;
 
 const normalizeStatus = (status) => {
@@ -69,7 +70,7 @@ const toSessionUser = (user) => {
 };
 
 const getErrorMessage = (error, fallback) =>
-  error instanceof Error && error.message ? error.message : fallback;
+  translateErrorMessage(error instanceof Error && error.message ? error.message : '', fallback);
 
 const buildAdminUserPayload = (payload, { includePassword = false } = {}) => {
   const normalizedPayload = {

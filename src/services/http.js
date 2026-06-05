@@ -1,5 +1,6 @@
 import { appConfig } from '../config';
 import { clearSessionToken, clearSessionUser } from '../utils/authStorage';
+import { formatFieldErrors, translateErrorMessage } from '../utils/errorMessages';
 
 const joinUrl = (baseUrl, path) => {
   const normalizedBase = String(baseUrl ?? '').replace(/\/$/, '');
@@ -51,7 +52,11 @@ export async function requestJson(path, options = {}) {
     }
 
     if (!response.ok) {
-      const error = new Error(data?.message ?? 'La solicitud al backend no se pudo completar.');
+      const fieldErrorMessage = formatFieldErrors(data?.fieldErrors);
+      const error = new Error(
+        fieldErrorMessage ||
+          translateErrorMessage(data?.message, 'La solicitud al backend no se pudo completar.')
+      );
       error.status = response.status;
       error.code = data?.code ?? '';
       error.payload = data;
@@ -59,6 +64,21 @@ export async function requestJson(path, options = {}) {
     }
 
     return data;
+  } catch (error) {
+    if (error?.status) {
+      throw error;
+    }
+
+    if (error?.name === 'AbortError') {
+      throw new Error('La solicitud tardó demasiado. Intenta nuevamente.');
+    }
+
+    throw new Error(
+      translateErrorMessage(
+        error?.message,
+        'No fue posible conectar con el backend. Verifica que esté encendido.'
+      )
+    );
   } finally {
     window.clearTimeout(timeoutId);
   }

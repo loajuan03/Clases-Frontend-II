@@ -1,308 +1,277 @@
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
-import AdminUserForm from '../components/AdminUserForm';
 import authService from '../services/authService';
 import dashboardStyles from '../styles/AdminDashboard.module.css';
-import adminStyles from '../styles/AdminProducts.module.css';
 import styles from '../styles/AdminUsers.module.css';
-import listStyles from '../styles/ProductList.module.css';
+
+const EMPTY_FORM = {
+  email: '',
+  firstName: '',
+  lastName: '',
+  password: '',
+  phone: '',
+  role: 'CUSTOMER',
+  status: 'ACTIVE',
+};
 
 function AdminUsers() {
   const navigate = useNavigate();
-  const [usersState, setUsersState] = useState([]);
   const [editingUser, setEditingUser] = useState(null);
+  const [formValues, setFormValues] = useState(EMPTY_FORM);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [loadError, setLoadError] = useState('');
-  const [submitError, setSubmitError] = useState('');
   const [query, setQuery] = useState('');
-  const [roleFilter, setRoleFilter] = useState('all');
-  const [statusFilter, setStatusFilter] = useState('all');
+  const [submitError, setSubmitError] = useState('');
+  const [users, setUsers] = useState([]);
+
+  const loadUsers = async () => {
+    setIsLoading(true);
+    setLoadError('');
+
+    try {
+      setUsers(await authService.getAdminUsersAsync());
+    } catch (error) {
+      setLoadError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'No fue posible cargar los usuarios.'
+      );
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   useEffect(() => {
-    let isMounted = true;
-
-    const loadUsers = async () => {
-      setIsLoading(true);
-      setLoadError('');
-
-      try {
-        const nextUsers = await authService.getAdminUsersAsync();
-
-        if (isMounted) {
-          setUsersState(nextUsers);
-        }
-      } catch (error) {
-        if (isMounted) {
-          setLoadError(
-            error instanceof Error && error.message
-              ? error.message
-              : 'No fue posible cargar los usuarios del panel admin.'
-          );
-        }
-      } finally {
-        if (isMounted) {
-          setIsLoading(false);
-        }
-      }
-    };
-
     loadUsers();
-
-    return () => {
-      isMounted = false;
-    };
   }, []);
 
   const filteredUsers = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase();
 
-    return usersState.filter((user) => {
-      const matchesQuery =
-        !normalizedQuery ||
-        [user.fullName ?? user.name, user.email, user.role, user.status].some((field) =>
-          String(field ?? '')
-            .toLowerCase()
-            .includes(normalizedQuery)
-        );
-      const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-      const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
+    if (!normalizedQuery) {
+      return users;
+    }
 
-      return matchesQuery && matchesRole && matchesStatus;
-    });
-  }, [query, roleFilter, statusFilter, usersState]);
+    return users.filter((user) =>
+      [user.fullName, user.name, user.email, user.role, user.status].some((field) =>
+        String(field ?? '')
+          .toLowerCase()
+          .includes(normalizedQuery)
+      )
+    );
+  }, [query, users]);
 
-  const handleOpenCreate = () => {
-    setSubmitError('');
+  const closeForm = () => {
     setEditingUser(null);
-    setIsFormOpen(true);
-  };
-
-  const handleCloseForm = () => {
-    setSubmitError('');
-    setEditingUser(null);
+    setFormValues(EMPTY_FORM);
     setIsFormOpen(false);
+    setSubmitError('');
   };
 
-  const handleCreateUser = async (payload) => {
+  const openCreateForm = () => {
+    setEditingUser(null);
+    setFormValues(EMPTY_FORM);
+    setIsFormOpen(true);
+    setSubmitError('');
+  };
+
+  const openEditForm = (user) => {
+    setEditingUser(user);
+    setFormValues({
+      email: user.email ?? '',
+      firstName: user.firstName ?? '',
+      lastName: user.lastName ?? '',
+      password: '',
+      phone: user.phone ?? '',
+      role: user.role ?? 'CUSTOMER',
+      status: user.status ?? 'ACTIVE',
+    });
+    setIsFormOpen(true);
+    setSubmitError('');
+  };
+
+  const handleChange = (event) => {
+    const { name, value } = event.target;
+    setFormValues((currentValues) => ({ ...currentValues, [name]: value }));
+    setSubmitError('');
+  };
+
+  const handleSubmit = async (event) => {
+    event.preventDefault();
     setIsSaving(true);
     setSubmitError('');
 
     try {
-      const createdUser = await authService.createAdminUserAsync(payload);
-      setUsersState((currentUsers) => [createdUser, ...currentUsers]);
-      handleCloseForm();
-      return { ok: true };
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : 'No fue posible crear el usuario.';
-      setSubmitError(message);
-      return { ok: false, error: message };
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleEditStart = async (user) => {
-    setSubmitError('');
-
-    try {
-      const nextUser = await authService.getAdminUserByIdAsync(user.id);
-      setEditingUser(nextUser ?? user);
-      setIsFormOpen(true);
-    } catch (error) {
-      setSubmitError(
-        error instanceof Error && error.message
-          ? error.message
-          : 'No fue posible cargar el usuario seleccionado.'
-      );
-    }
-  };
-
-  const handleUpdateUser = async (payload) => {
-    setIsSaving(true);
-    setSubmitError('');
-
-    try {
-      const updatedUser = await authService.updateAdminUserAsync(editingUser?.id, payload);
-      setUsersState((currentUsers) =>
-        currentUsers.map((user) => (user.id === updatedUser.id ? updatedUser : user))
-      );
-      handleCloseForm();
-      return { ok: true };
-    } catch (error) {
-      const message =
-        error instanceof Error && error.message
-          ? error.message
-          : 'No fue posible actualizar el usuario.';
-      setSubmitError(message);
-      return { ok: false, error: message };
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  const handleDeactivateUser = async (userId) => {
-    setSubmitError('');
-
-    try {
-      const nextUsers = await authService.deleteAdminUserAsync(userId);
-      setUsersState(nextUsers);
-
-      if (editingUser?.id === userId) {
-        handleCloseForm();
+      if (editingUser) {
+        await authService.updateAdminUserAsync(editingUser.id, formValues);
+      } else {
+        await authService.createAdminUserAsync(formValues);
       }
+
+      closeForm();
+      await loadUsers();
     } catch (error) {
       setSubmitError(
         error instanceof Error && error.message
           ? error.message
-          : 'No fue posible desactivar el usuario seleccionado.'
+          : 'No fue posible guardar el usuario.'
+      );
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleDelete = async (userId) => {
+    setSubmitError('');
+
+    try {
+      setUsers(await authService.deleteAdminUserAsync(userId));
+    } catch (error) {
+      setSubmitError(
+        error instanceof Error && error.message
+          ? error.message
+          : 'No fue posible desactivar el usuario.'
       );
     }
   };
 
   return (
-    <section className={adminStyles.container}>
-      <header className={adminStyles.header}>
+    <section className={dashboardStyles.container}>
+      <header className={dashboardStyles.header}>
         <div>
-          <p className={adminStyles.eyebrow}>Semana 18</p>
-          <h1 className={adminStyles.title}>Gestión de usuarios</h1>
-          <p className={adminStyles.subtitle}>
-            Administra usuarios del sistema con backend real, incluyendo creación, edición de rol y
-            control de estado activo o inactivo.
+          <p className={dashboardStyles.eyebrow}>Semana 12</p>
+          <h1 className={dashboardStyles.title}>Gestion de usuarios</h1>
+          <p className={dashboardStyles.subtitle}>
+            Administra clientes y administradores usando los servicios del backend cuando la API
+            remota esta activa.
           </p>
         </div>
 
-        <div className={adminStyles.actions}>
+        <div className={dashboardStyles.actions}>
           <button
             type="button"
-            className={adminStyles.secondaryButton}
+            className={dashboardStyles.secondaryButton}
             onClick={() => navigate('/admin')}
           >
             Volver al panel
           </button>
-          <button
-            type="button"
-            className={adminStyles.primaryButton}
-            onClick={handleOpenCreate}
-            disabled={isLoading}
-          >
-            Crear usuario
+          <button type="button" className={dashboardStyles.primaryButton} onClick={openCreateForm}>
+            Agregar usuario
           </button>
         </div>
       </header>
 
       {isFormOpen ? (
-        <AdminUserForm
-          initialValues={editingUser}
-          isEditing={Boolean(editingUser)}
-          isSubmitting={isSaving}
-          onCancel={handleCloseForm}
-          onSubmit={editingUser ? handleUpdateUser : handleCreateUser}
-          submitError={submitError}
-        />
-      ) : (
-        <>
-          <div className={listStyles.toolbar}>
-            <div className={listStyles.filters}>
+        <section className={dashboardStyles.card}>
+          <form className={dashboardStyles.list} onSubmit={handleSubmit}>
+            <input
+              name="firstName"
+              value={formValues.firstName}
+              onChange={handleChange}
+              placeholder="Nombre"
+            />
+            <input
+              name="lastName"
+              value={formValues.lastName}
+              onChange={handleChange}
+              placeholder="Apellido"
+            />
+            <input
+              name="email"
+              value={formValues.email}
+              onChange={handleChange}
+              placeholder="Correo electronico"
+              type="email"
+            />
+            <input
+              name="phone"
+              value={formValues.phone}
+              onChange={handleChange}
+              placeholder="Telefono"
+            />
+            {!editingUser ? (
               <input
-                className={listStyles.searchInput}
-                disabled={isLoading}
-                value={query}
-                onChange={(event) => setQuery(event.target.value)}
-                placeholder="Buscar por nombre, correo, rol o estado..."
-                type="search"
+                name="password"
+                value={formValues.password}
+                onChange={handleChange}
+                placeholder="Contrasena"
+                type="password"
               />
+            ) : null}
+            <select name="role" value={formValues.role} onChange={handleChange}>
+              <option value="CUSTOMER">Cliente</option>
+              <option value="ADMIN">Administrador</option>
+            </select>
+            <select name="status" value={formValues.status} onChange={handleChange}>
+              <option value="ACTIVE">Activo</option>
+              <option value="INACTIVE">Inactivo</option>
+            </select>
 
-              <select
-                className={listStyles.select}
-                disabled={isLoading}
-                value={roleFilter}
-                onChange={(event) => setRoleFilter(event.target.value)}
-              >
-                <option value="all">Todos los roles</option>
-                <option value="ADMIN">Administrador</option>
-                <option value="CUSTOMER">Cliente</option>
-              </select>
+            {submitError ? <p className={dashboardStyles.emptyText}>{submitError}</p> : null}
 
-              <select
-                className={listStyles.select}
-                disabled={isLoading}
-                value={statusFilter}
-                onChange={(event) => setStatusFilter(event.target.value)}
-              >
-                <option value="all">Todos los estados</option>
-                <option value="ACTIVE">Activos</option>
-                <option value="INACTIVE">Inactivos</option>
-              </select>
+            <div className={styles.userActions}>
+              <button className={styles.actionButton} type="button" onClick={closeForm}>
+                Cancelar
+              </button>
+              <button className={styles.actionButton} type="submit" disabled={isSaving}>
+                {isSaving ? 'Guardando...' : 'Guardar usuario'}
+              </button>
             </div>
+          </form>
+        </section>
+      ) : (
+        <section className={dashboardStyles.card}>
+          <div className={dashboardStyles.cardHeader}>
+            <h2 className={dashboardStyles.sectionTitle}>Usuarios</h2>
+            <input
+              value={query}
+              onChange={(event) => setQuery(event.target.value)}
+              placeholder="Buscar usuario..."
+              type="search"
+            />
           </div>
 
-          {submitError ? (
-            <div className={listStyles.emptyState}>
-              <p>{submitError}</p>
-            </div>
-          ) : null}
+          {submitError ? <p className={dashboardStyles.emptyText}>{submitError}</p> : null}
 
           {isLoading ? (
-            <div className={listStyles.emptyState}>
-              <p>Cargando usuarios del panel admin...</p>
-            </div>
+            <p className={dashboardStyles.emptyText}>Cargando usuarios...</p>
           ) : loadError ? (
-            <div className={listStyles.emptyState}>
-              <p>{loadError}</p>
-            </div>
+            <p className={dashboardStyles.emptyText}>{loadError}</p>
           ) : filteredUsers.length === 0 ? (
-            <div className={listStyles.emptyState}>
-              <p>No hay usuarios que coincidan con los filtros actuales.</p>
-            </div>
+            <p className={dashboardStyles.emptyText}>No hay usuarios para mostrar.</p>
           ) : (
             <div className={dashboardStyles.list}>
               {filteredUsers.map((user) => (
-                <article key={user.id} className={styles.userCard}>
+                <article className={styles.userCard} key={user.id}>
                   <div className={styles.userMain}>
                     <div>
                       <strong className={styles.userName}>{user.fullName || user.name}</strong>
                       <p className={styles.userMeta}>{user.email}</p>
                     </div>
-
                     <div className={styles.badges}>
-                      <span className={dashboardStyles.roleBadge}>
-                        {user.role === 'ADMIN' ? 'Administrador' : 'Cliente'}
-                      </span>
-                      <span className={dashboardStyles.roleBadge}>
-                        {user.status === 'INACTIVE' ? 'Inactivo' : 'Activo'}
-                      </span>
+                      <span>{user.role === 'ADMIN' ? 'Administrador' : 'Cliente'}</span>
+                      <span>{user.status === 'INACTIVE' ? 'Inactivo' : 'Activo'}</span>
                     </div>
                   </div>
-
                   <div className={styles.userDetails}>
-                    <span>Telefono: {user.phone || 'Sin telefono'}</span>
-                    <span>
-                      Creado:{' '}
-                      {user.createdAt
-                        ? new Date(user.createdAt).toLocaleDateString('es-CO')
-                        : 'Sin fecha'}
-                    </span>
+                    <span>{user.phone || 'Sin telefono'}</span>
+                    <span>{user.createdAt || 'Sin fecha'}</span>
                   </div>
-
                   <div className={styles.userActions}>
                     <button
                       type="button"
                       className={styles.actionButton}
-                      onClick={() => handleEditStart(user)}
+                      onClick={() => openEditForm(user)}
                     >
                       Editar
                     </button>
                     <button
                       type="button"
                       className={styles.actionButton}
-                      onClick={() => handleDeactivateUser(user.id)}
-                      disabled={user.status === 'INACTIVE'}
+                      onClick={() => handleDelete(user.id)}
                     >
                       Desactivar
                     </button>
@@ -311,7 +280,7 @@ function AdminUsers() {
               ))}
             </div>
           )}
-        </>
+        </section>
       )}
     </section>
   );

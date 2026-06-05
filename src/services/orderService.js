@@ -1,6 +1,5 @@
 import { appConfig } from '../config';
 import { loadSessionToken } from '../utils/authStorage';
-import { loadCart } from '../utils/cartStorage';
 import { loadOrders, loadOrdersByUserId, saveOrder, saveOrders } from '../utils/ordersStorage';
 
 import { requestJson } from './http';
@@ -40,14 +39,12 @@ function createOrder(order) {
 
 function getOrdersAsync() {
   if (appConfig.useRemoteApi) {
-   return requestJson('/orders/me', {
-  method: 'GET',
-  token: loadSessionToken(),
-}).then((response) =>
-  saveOrders(
-    (Array.isArray(response) ? response : []).map(normalizeRemoteOrder)
-  )
-);
+    return requestJson('/orders/me', {
+      method: 'GET',
+      token: loadSessionToken(),
+    }).then((response) =>
+      saveOrders((Array.isArray(response) ? response : []).map(normalizeRemoteOrder))
+    );
   }
 
   return toAsyncResult(() => getOrders());
@@ -66,13 +63,7 @@ function getOrderByIdForUserAsync(userId, orderId) {
     return requestJson(`/orders/${orderId}`, {
       method: 'GET',
       token: loadSessionToken(),
-    }).then((response) =>
-  saveOrder(
-    normalizeOrderPayload(
-      normalizeRemoteOrder(response)
-    )
-  )
-);
+    }).then((response) => saveOrder(normalizeOrderPayload(normalizeRemoteOrder(response))));
   }
 
   return toAsyncResult(() => getOrderByIdForUser(userId, orderId));
@@ -83,15 +74,13 @@ function createOrderAsync(order) {
     return toAsyncResult(() => createOrder(order));
   }
 
-  const cart = loadCart();
-
   return requestJson('/orders/checkout', {
     method: 'POST',
     token: loadSessionToken(),
-   body: {
-  shippingAddressId: order?.shippingAddress?.id ?? order?.shippingAddressId,
-  billingAddressId: order?.billingAddress?.id ?? order?.billingAddressId,
-},,
+    body: {
+      shippingAddressId: order?.shippingAddress?.id ?? order?.shippingAddressId,
+      billingAddressId: order?.billingAddress?.id ?? order?.billingAddressId,
+    },
   }).then((response) => saveOrder(normalizeOrderPayload(response)));
 }
 const normalizeRemoteOrder = (order) => ({

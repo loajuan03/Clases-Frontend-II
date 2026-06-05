@@ -1,158 +1,103 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useEffect, useMemo, useState } from 'react';
 
-import { appConfig } from '../config';
 import cartService from '../services/cartService';
-import { CART_STORAGE_KEY, CART_UPDATED_EVENT } from '../utils/cartStorage';
-
-import { AuthContext } from './AuthContext';
+import { CART_UPDATED_EVENT } from '../utils/cartStorage';
 
 const CartContext = createContext(null);
-const EMPTY_CART_ITEMS = [];
 
 function CartProvider({ children }) {
-  const { currentUser, isHydratingSession } = useContext(AuthContext);
-  const [cart, setCart] = useState(() => cartService.getCart());
+  const [cart, setCart] = useState(cartService.getCart);
   const [cartError, setCartError] = useState('');
-  const [isSyncingCart, setIsSyncingCart] = useState(false);
-  const [cartHydrationStatus, setCartHydrationStatus] = useState(() =>
-    appConfig.useRemoteApi ? 'idle' : 'ready'
-  );
+  const [cartHydrationStatus, setCartHydrationStatus] = useState('idle');
 
   useEffect(() => {
     let isMounted = true;
 
-    const syncCartFromStorage = () => {
-      if (!isMounted) {
-        return;
-      }
-
-      setCart(cartService.getCart());
-    };
-
-    const handleStorage = (event) => {
-      if (!event.key || event.key === CART_STORAGE_KEY) {
-        syncCartFromStorage();
-      }
-    };
-
-    syncCartFromStorage();
-    window.addEventListener('storage', handleStorage);
-    window.addEventListener(CART_UPDATED_EVENT, syncCartFromStorage);
-
-    return () => {
-      isMounted = false;
-      window.removeEventListener('storage', handleStorage);
-      window.removeEventListener(CART_UPDATED_EVENT, syncCartFromStorage);
-    };
-  }, []);
-
-  useEffect(() => {
-    if (!appConfig.useRemoteApi) {
-      setCartHydrationStatus('ready');
-      return;
-    }
-
-    if (isHydratingSession) {
-      return;
-    }
-
-    let isMounted = true;
-
-    const hydrateRemoteCart = async () => {
-      setIsSyncingCart(true);
-      setCartHydrationStatus('hydrating');
+    const hydrateCart = async () => {
+      setCartHydrationStatus('loading');
+      setCartError('');
 
       try {
         const nextCart = await cartService.getCartAsync();
 
-        if (!isMounted) {
-          return;
-        }
-
-        setCart(nextCart);
-        setCartError('');
-        setCartHydrationStatus('ready');
-      } catch (error) {
-        if (!isMounted) {
-          return;
-        }
-
-        setCartError(
-          error instanceof Error && error.message
-            ? error.message
-            : 'No fue posible sincronizar el carrito.'
-        );
-        setCartHydrationStatus('error');
-      } finally {
         if (isMounted) {
-          setIsSyncingCart(false);
+          setCart(nextCart);
+          setCartHydrationStatus('ready');
+        }
+      } catch (error) {
+        if (isMounted) {
+          setCartError(
+            error instanceof Error && error.message
+              ? error.message
+              : 'No fue posible cargar el carrito.'
+          );
+          setCartHydrationStatus('error');
         }
       }
     };
 
-    hydrateRemoteCart();
+    hydrateCart();
 
     return () => {
       isMounted = false;
     };
-  }, [currentUser?.id, isHydratingSession]);
+  }, []);
 
-  const cartItems = cart.items ?? EMPTY_CART_ITEMS;
+  useEffect(() => {
+    const handleCartUpdated = (event) => {
+      setCart(event.detail ?? cartService.getCart());
+    };
 
-  const runCartAction = async (action) => {
-    setIsSyncingCart(true);
+    window.addEventListener(CART_UPDATED_EVENT, handleCartUpdated);
+
+    return () => {
+      window.removeEventListener(CART_UPDATED_EVENT, handleCartUpdated);
+    };
+  }, []);
+
+  const runCartAction = async (action, fallbackMessage) => {
     setCartError('');
 
     try {
       const nextCart = await action();
-      setCart(nextCart ?? cartService.getCart());
+      setCart(nextCart);
+      return nextCart;
     } catch (error) {
-      setCartError(
-        error instanceof Error && error.message
-          ? error.message
-          : 'No fue posible actualizar el carrito.'
-      );
-    } finally {
-      setIsSyncingCart(false);
+      const message = error instanceof Error && error.message ? error.message : fallbackMessage;
+      setCartError(message);
+      throw error;
     }
   };
 
-  const addToCart = (product) => {
-    return runCartAction(() => cartService.addToCartAsync(product, cartItems));
-  };
+  const value = useMemo(() => {
+    const cartItems = cart.items ?? [];
 
-  const updateCartItemQuantity = (productId, nextQuantity) => {
-    return runCartAction(() =>
-      cartService.updateCartItemQuantityAsync(productId, nextQuantity, cartItems)
-    );
-  };
-
-  const removeCartItem = (productId) => {
-    return runCartAction(() => cartService.removeCartItemAsync(productId, cartItems));
-  };
-
-  const clearCart = () => {
-    return runCartAction(() => cartService.clearCartAsync());
-  };
-
-  const cartItemCount = useMemo(() => cartService.getCartItemCount(cartItems), [cartItems]);
-
-  const refreshCart = () => runCartAction(() => cartService.getCartAsync());
-
-  const value = {
-    addToCart,
-    cart,
-    cartError,
-    cartHydrationStatus,
-    cartItemCount,
-    cartItems,
-    clearCart,
-    isCartReady: cartHydrationStatus === 'ready',
-    isSyncingCart,
-    removeCartItem,
-    refreshCart,
-    updateCartItemQuantity,
-  };
+    return {
+      addToCart: (product) =>
+        runCartAction(
+          () => cartService.addToCartAsync(product, cartItems),
+          'No fue posible agregar el producto al carrito.'
+        ),
+      cart,
+      cartError,
+      cartHydrationStatus,
+      cartItemCount: cartService.getCartItemCount(cartItems),
+      cartItems,
+      clearCart: () =>
+        runCartAction(() => cartService.clearCartAsync(), 'No fue posible vaciar el carrito.'),
+      isCartReady: cartHydrationStatus === 'ready',
+      removeCartItem: (productId) =>
+        runCartAction(
+          () => cartService.removeCartItemAsync(productId, cartItems),
+          'No fue posible quitar el producto del carrito.'
+        ),
+      updateCartItemQuantity: (productId, nextQuantity) =>
+        runCartAction(
+          () => cartService.updateCartItemQuantityAsync(productId, nextQuantity, cartItems),
+          'No fue posible actualizar la cantidad del producto.'
+        ),
+    };
+  }, [cart, cartError, cartHydrationStatus]);
 
   return <CartContext.Provider value={value}>{children}</CartContext.Provider>;
 }
